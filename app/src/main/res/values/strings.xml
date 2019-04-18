@@ -1,3 +1,9 @@
 <resources>
     <string name="app_name">Shake Counter</string>
+    <string name="btn_start">Start the counter</string>
+    <string name="btn_back2counter">Back to counter</string>
+    <string name="btn_reset">Reset</string>
+    <string name="btn_stop">Stop</string>
+    <string name="title_time">Recording Duration(HH:mm:ss):</string>
+    <string name="title_count">Shake Count:</string>
 </resources>

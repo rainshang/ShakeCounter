@@ -1,40 +1,83 @@
 package live.preventure.shakecounter
 
+import android.content.ComponentName
 import android.content.Context
-import android.hardware.Sensor
-import android.hardware.SensorEvent
-import android.hardware.SensorEventListener
-import android.hardware.SensorManager
-import android.support.v7.app.AppCompatActivity
+import android.content.Intent
+import android.content.ServiceConnection
 import android.os.Bundle
-import android.widget.TextView
+import android.os.IBinder
+import android.support.v7.app.AppCompatActivity
+import android.view.MenuItem
+import live.preventure.shakecounter.fragment.CounterFragment
+import live.preventure.shakecounter.fragment.MainFragment
 
-class MainActivity(startTimestamp: Long = System.currentTimeMillis()): AppCompatActivity(), SensorEventListener {
-    private lateinit var sensorManager: SensorManager
-    private lateinit var accelerometer: Sensor
+class MainActivity(startTimestamp: Long = System.currentTimeMillis()) : AppCompatActivity(),
+    MainFragment.MainFragmentListener, CounterFragment.CounterFragmentListener {
+
+    var sensorService: SensorService? = null
+    private val mConnection = object : ServiceConnection {
+        override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+            sensorService = (service as SensorService.SensorBinder).getService()
+            val currentFragment = supportFragmentManager.findFragmentById(R.id.fragment_container)
+            if (currentFragment is MainFragment) {
+                currentFragment.refreshUI()
+            }
+        }
+
+        override fun onServiceDisconnected(name: ComponentName?) {
+            sensorService = null
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
-
-        this.sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
-        sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)?.let {
-            this.accelerometer = it
+        Intent(this, SensorService::class.java).also {
+            startService(it)
         }
-
+        setContentView(R.layout.activity_main)
+        supportFragmentManager.apply {
+            addOnBackStackChangedListener {
+                supportActionBar?.setDisplayHomeAsUpEnabled(supportFragmentManager.backStackEntryCount > 0)
+            }
+            beginTransaction()
+                .add(R.id.fragment_container, MainFragment())
+                .commit()
+        }
     }
 
-    override fun onResume() {
-        super.onResume()
-        sensorManager.registerListener(this, this.accelerometer, SensorManager.SENSOR_DELAY_NORMAL)
+    override fun onStart() {
+        super.onStart()
+        Intent(this, SensorService::class.java).also {
+            bindService(it, mConnection, Context.BIND_AUTO_CREATE)
+        }
     }
 
-    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
-        // Required for sensor usage but not required for this project.
+    override fun onStop() {
+        super.onStop()
+        if (sensorService != null) {
+            unbindService(mConnection)
+        }
     }
 
-    override fun onSensorChanged(event: SensorEvent?) {
-        var values = event!!.values // The three variables [x. y. z] used in shake calculations
+    override fun onOptionsItemSelected(item: MenuItem?): Boolean {
+        return if (android.R.id.home == item?.itemId) {
+            onBackPressed()
+            true
+        } else {
+            super.onOptionsItemSelected(item)
+        }
+    }
+
+    override fun onMainBtnClick(text: String) {
+        supportFragmentManager
+            .beginTransaction()
+            .replace(R.id.fragment_container, CounterFragment())
+            .addToBackStack(null)
+            .commit()
+    }
+
+    override fun onStopClick() {
+        onBackPressed()
     }
 
 }
