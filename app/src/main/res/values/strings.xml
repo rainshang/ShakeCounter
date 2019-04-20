@@ -6,4 +6,5 @@
     <string name="btn_stop">Stop</string>
     <string name="title_time">Recording Duration(HH:mm:ss):</string>
     <string name="title_count">Shake Count:</string>
+    <string name="tip_sensor_service">Sensor service is running…</string>
 </resources>

@@ -1,17 +1,16 @@
 package live.preventure.shakecounter
 
 import android.annotation.SuppressLint
-import android.app.Service
+import android.app.*
 import android.content.Context
 import android.content.Intent
+import android.graphics.Color
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
-import android.os.Binder
-import android.os.Handler
-import android.os.IBinder
-import android.os.Message
+import android.os.*
+import android.support.v4.app.NotificationCompat
 
 class SensorService : Service(), SensorEventListener {
 
@@ -37,6 +36,30 @@ class SensorService : Service(), SensorEventListener {
 
     override fun onCreate() {
         super.onCreate()
+        val channelId = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channelId = getString(R.string.app_name)
+            val channelName = getString(R.string.app_name)
+            val chan = NotificationChannel(
+                channelId,
+                channelName, NotificationManager.IMPORTANCE_HIGH
+            )
+            chan.lightColor = Color.BLUE
+            chan.importance = NotificationManager.IMPORTANCE_NONE
+            chan.lockscreenVisibility = Notification.VISIBILITY_PRIVATE
+            val service = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            service.createNotificationChannel(chan)
+            channelId
+        } else {
+            ""
+        }
+        startForeground(
+            (System.currentTimeMillis() / 1000).toInt(),
+            NotificationCompat.Builder(this, channelId)
+                .setSmallIcon(R.mipmap.ic_launcher)
+                .setContentText(getString(R.string.tip_sensor_service))
+                .setContentIntent(PendingIntent.getActivity(this, 0, Intent(this, MainActivity::class.java), 0))
+                .build()
+        )
         sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
         sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)?.let {
             accelerometer = it
